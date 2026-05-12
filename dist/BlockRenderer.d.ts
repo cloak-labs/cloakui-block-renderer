@@ -1,4 +1,4 @@
-import type { BlockRendererConfig, BlockDataWithExtraContext, RenderPreparedBlock, EmptyObjectOrRecord, RenderOptions } from "./types";
+import type { BlockRendererConfig, BlockDataWithExtraContext, RenderPreparedBlock, EmptyObjectOrRecord, RenderOptions } from "./types.js";
 import { DeepPartial } from "ts-essentials";
 export declare class BlockRenderer<TComponent extends (props: any) => any = (props: any) => any, TRenderOutput = any, TBlockData extends Record<string, any> = Record<string, any>> {
     protected _config: BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>;
@@ -21,3 +21,4 @@ export declare class BlockRenderer<TComponent extends (props: any) => any = (pro
     /** Attach some user-defined meta to this BlockRenderer instance. */
     setMeta(meta: Record<string, any>): void;
 }
+//# sourceMappingURL=BlockRenderer.d.ts.map

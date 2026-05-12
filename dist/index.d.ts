@@ -1,2 +1,3 @@
-export * from "./types";
-export { BlockRenderer } from "./BlockRenderer";
+export * from "./types.js";
+export { BlockRenderer } from "./BlockRenderer.js";
+//# sourceMappingURL=index.d.ts.map

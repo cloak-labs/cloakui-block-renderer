@@ -5,7 +5,7 @@ import type {
   RenderPreparedBlock,
   EmptyObjectOrRecord,
   RenderOptions,
-} from "./types";
+} from "./types.js";
 import { deepMerge } from "@kaelan/deep-merge-ts";
 import { DeepPartial } from "ts-essentials";
 

@@ -1,4 +1,4 @@
-import { BlockRenderer } from "./BlockRenderer";
+import type { BlockRenderer } from "./BlockRenderer.js";
 
 // export type DataRouterResultFilter<TComponent, TRenderOutput, TBlockData> =
 //   FilterHookFunction<
@@ -13,7 +13,7 @@ import { BlockRenderer } from "./BlockRenderer";
 export type BlockRendererConfig<
   TComponent extends (props: any) => any = (props: any) => any,
   TRenderOutput = any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   // render?: (
   //   blockComponents: RenderPreparedBlock<TComponent>[],
@@ -23,13 +23,13 @@ export type BlockRendererConfig<
   renderBlock: (
     component: RenderPreparedBlock<TComponent>,
     options?: RenderOptions,
-    blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>
+    blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>,
   ) => TRenderOutput;
   combineBlocks?: (
     renderedBlocks: TRenderOutput[],
     components: RenderPreparedBlock<TComponent>[],
     options?: RenderOptions,
-    blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>
+    blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>,
   ) => TRenderOutput | TRenderOutput[];
   hooks?: {
     filters?: {
@@ -64,7 +64,7 @@ export type BlockRendererConfig<
 
 export type FilterHookFunction<TValue = any, TProps = any, TResult = any> = (
   valueToFilter: TValue,
-  props?: TProps
+  props?: TProps,
 ) => TResult;
 
 export type EmptyObject = {};
@@ -78,7 +78,7 @@ export type EmptyObjectOrRecord<T = Record<string, any>> = T extends Record<
 export type RenderPreparedBlock<
   TComponent extends (props: any) => any = (props: any) => any,
   TProps = EmptyObjectOrRecord,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   Component: TComponent;
   props: TProps;
@@ -89,17 +89,17 @@ export type DataRouter<
   TProps = EmptyObjectOrRecord,
   TBlockData extends Record<string, any> = Record<string, any>,
   TComponent extends (props: any) => any = (props: any) => any,
-  TBlockDataWithExtraContext = BlockDataWithExtraContext<TBlockData>
+  TBlockDataWithExtraContext = BlockDataWithExtraContext<TBlockData>,
 > = (
   block: TBlockDataWithExtraContext extends BlockDataWithExtraContext<any>
     ? TBlockDataWithExtraContext
     : BlockDataWithExtraContext<TBlockData>,
-  blockRenderer?: BlockRenderer<TComponent, any, TBlockData>
+  blockRenderer?: BlockRenderer<TComponent, any, TBlockData>,
 ) => TProps;
 
 export type GlobalDataRouter<
   TProps = EmptyObjectOrRecord,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = (options: {
   block: BlockDataWithExtraContext<TBlockData>;
   props: TProps;
@@ -108,7 +108,7 @@ export type GlobalDataRouter<
 export type SingleBlockConfigWithoutVariants<
   TComponent extends (props: any) => any = (props: any) => any,
   TProps = EmptyObjectOrRecord,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   dataRouter?: DataRouter<TProps, TBlockData, TComponent>;
   component?: TComponent;
@@ -120,13 +120,13 @@ export type SingleBlockConfigWithoutVariants<
 };
 
 export type VariantsRouter<
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = (block: BlockDataWithExtraContext<TBlockData>) => string;
 
 export type SingleBlockConfigWithVariants<
   TComponent extends (props: any) => any = (props: any) => any,
   TProps = EmptyObjectOrRecord,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   variantsRouter: VariantsRouter<TBlockData>;
   variants: {
@@ -145,7 +145,7 @@ export type SingleBlockConfigWithVariants<
 
 export type SingleBlockConfig<
   TComponent extends (props: any) => any = (props: any) => any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > =
   | SingleBlockConfigWithoutVariants<
       TComponent,
@@ -156,20 +156,20 @@ export type SingleBlockConfig<
 
 export type BlocksConfig<
   TComponent extends (props: any) => any = (props: any) => any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   [key: string]: SingleBlockConfig<TComponent, TBlockData>;
 };
 
 export type BlockDataWithExtraContext<
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = Partial<TBlockData> & {
   context?: BlockContext<Partial<TBlockData>>;
   meta?: Record<string, any>;
 };
 
 export type BlockContext<
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   customProps?: Record<string, any>;
   parent?: BlockDataWithExtraContext<Partial<TBlockData>> | null;
@@ -179,7 +179,7 @@ export type BlockContext<
 };
 
 export type RenderOptions<
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   parent?: BlockDataWithExtraContext<Partial<TBlockData>>;
   customProps?: Record<string, any>;
@@ -187,7 +187,7 @@ export type RenderOptions<
 
 export type ProviderConfig<
   TComponent extends (props: any) => any = (props: any) => any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   condition: (args: { blocks: TBlockData[] }) => boolean;
   component: TComponent;
@@ -196,11 +196,11 @@ export type ProviderConfig<
 export type BlockRendererPlugin<
   TComponent extends (props: any) => any = (props: any) => any,
   TRenderOutput = any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > = (
   config: BlockRendererConfig<TComponent, TRenderOutput, TBlockData>,
   context: {
     executionCount: number;
     processedBlocks: Set<string>; // Track which block IDs have been processed
-  }
+  },
 ) => BlockRendererConfig<TComponent, TRenderOutput, TBlockData>;

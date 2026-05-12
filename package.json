@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "tsc -p tsconfig.json -w --preserveWatchOutput",
     "build": "npm run build-ts",
-    "build-ts": "tsc-silent -p tsconfig.json --suppress @",
+    "build-ts": "tsc -p tsconfig.json",
     "clean": "rm -rf .turbo && rm -rf dist && npm run clean:modules",
     "clean:modules": "rm -rf node_modules"
   },

@@ -1,4 +1,4 @@
-import { BlockRenderer } from "./BlockRenderer";
+import type { BlockRenderer } from "./BlockRenderer.js";
 export type BlockRendererConfig<TComponent extends (props: any) => any = (props: any) => any, TRenderOutput = any, TBlockData extends Record<string, any> = Record<string, any>> = {
     renderBlock: (component: RenderPreparedBlock<TComponent>, options?: RenderOptions, blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>) => TRenderOutput;
     combineBlocks?: (renderedBlocks: TRenderOutput[], components: RenderPreparedBlock<TComponent>[], options?: RenderOptions, blockRenderer?: BlockRenderer<TComponent, TRenderOutput, TBlockData>) => TRenderOutput | TRenderOutput[];
@@ -77,3 +77,4 @@ export type BlockRendererPlugin<TComponent extends (props: any) => any = (props:
     executionCount: number;
     processedBlocks: Set<string>;
 }) => BlockRendererConfig<TComponent, TRenderOutput, TBlockData>;
+//# sourceMappingURL=types.d.ts.map
