@@ -1,9 +1,15 @@
 import { deepMerge } from "@kaelan/deep-merge-ts";
+import { BlockManifest } from "./BlockManifest.js";
+import { discoverBlocks, } from "./discoverBlocks.js";
+import { applyNestedBlocks, } from "./nestedBlocks.js";
+export { discoverBlocks, } from "./discoverBlocks.js";
+export { applyNestedBlocks, treesFromNestedBlocks, } from "./nestedBlocks.js";
 export class BlockRenderer {
     constructor(config) {
         /** This property holds the full array of blocks data that is currently being rendered. */
         this._blocksData = [];
         this._meta = {};
+        this._manifest = new BlockManifest();
         let { blocks, plugins = [], __executionCounts = new Map(), __processedBlocks = new Set(), } = config;
         // if user provides an array of blockConfigs, we take care of deep merging them together before setting the final config:
         if (blocks && Array.isArray(blocks)) {
@@ -37,6 +43,16 @@ export class BlockRenderer {
     }
     mergeConfigWith(config) {
         const mergedConfig = deepMerge(this._config, config);
+        // deepMerge keeps Set/Map by reference. Clone so plugin bookkeeping on a
+        // singleton base renderer (e.g. kit coreRenderer) isn't mutated when
+        // createPageBlockRenderer repeatedly mergeConfigWith()'s lazy block configs —
+        // otherwise processedBlocks skips container defaults on later requests.
+        if (mergedConfig.__processedBlocks instanceof Set) {
+            mergedConfig.__processedBlocks = new Set(mergedConfig.__processedBlocks);
+        }
+        if (mergedConfig.__executionCounts instanceof Map) {
+            mergedConfig.__executionCounts = new Map(mergedConfig.__executionCounts);
+        }
         return new BlockRenderer(mergedConfig);
     }
     /** This method gets the raw block data array prepared/formatted for rendering. */
@@ -79,6 +95,7 @@ export class BlockRenderer {
             console.error(`Missing config for block "${blockId}", so we skip it.`);
             return;
         }
+        const parentBlockConfig = config;
         // if the block has variants, we need to determine which one to use:
         if (config.variantsRouter) {
             const variant = config.variantsRouter?.(block);
@@ -92,9 +109,15 @@ export class BlockRenderer {
             console.error(`Missing component for block "${blockId}", so we skip it.`);
             return;
         }
+        this._manifest.recordRender(block, blockId);
         const { filters } = this._config.hooks;
         // call the block's dataRouter to receive its props
         let dataRouterProps = filters.dataRouterResult(config.dataRouter?.(block, this) ?? {}, { block, blockRenderer: this });
+        const nestedBlocks = ("nestedBlocks" in config ? config.nestedBlocks : undefined) ??
+            parentBlockConfig.nestedBlocks;
+        if (nestedBlocks?.length) {
+            dataRouterProps = applyNestedBlocks(dataRouterProps, block, nestedBlocks, this);
+        }
         return {
             Component: config.component,
             props: dataRouterProps,
@@ -102,8 +125,10 @@ export class BlockRenderer {
         };
     }
     render(blocksData, options) {
-        if (!options?.parent)
+        if (!options?.parent) {
             this._blocksData = blocksData;
+            this._manifest.resetRendered();
+        }
         const components = this.getComponents(blocksData, options);
         if (!this._config.renderBlock) {
             throw Error(`You need to specify a "renderBlock" function in your BlockRenderer config before you can use BlockRenderer.render(...)`);
@@ -123,7 +148,10 @@ export class BlockRenderer {
     }
     applyProviders(content, blocksData) {
         return Object.values(this._config.providers).reduceRight((acc, provider) => {
-            if (provider.condition({ blocks: blocksData })) {
+            if (provider.condition({
+                blocks: blocksData,
+                manifest: this._manifest,
+            })) {
                 return provider.component({ children: acc });
             }
             return acc;
@@ -145,5 +173,50 @@ export class BlockRenderer {
     /** Attach some user-defined meta to this BlockRenderer instance. */
     setMeta(meta) {
         this._meta = deepMerge(this._meta, meta);
+    }
+    /**
+     * Walk block data and record discovered blocks without running data routers
+     * or rendering components. Useful for pre-render module selection.
+     */
+    discover(blocksData, options) {
+        const config = this.getConfig();
+        const registry = this.buildDiscoverRegistry(options?.registry);
+        return discoverBlocks(blocksData, {
+            ...options,
+            blockIdField: config.blockIdField,
+            registry,
+            manifest: this._manifest,
+        });
+    }
+    /** Blocks recorded during the most recent root-level `render()` call. */
+    getManifest() {
+        return this._manifest;
+    }
+    buildDiscoverRegistry(externalRegistry) {
+        const registry = {
+            ...(externalRegistry ?? {}),
+        };
+        const blocks = this.getConfig().blocks;
+        if (!blocks || Array.isArray(blocks))
+            return registry;
+        for (const [blockId, blockConfig] of Object.entries(blocks)) {
+            const nestedBlocks = blockConfig.nestedBlocks;
+            const variantsRouter = blockConfig.variantsRouter;
+            const variants = blockConfig.variants;
+            const variantNestedBlocks = variants
+                ? Object.fromEntries(Object.entries(variants)
+                    .filter(([, variant]) => variant.nestedBlocks?.length)
+                    .map(([name, variant]) => [name, variant.nestedBlocks]))
+                : undefined;
+            registry[blockId] = {
+                ...registry[blockId],
+                ...(nestedBlocks?.length ? { nestedBlocks } : {}),
+                ...(variantNestedBlocks && Object.keys(variantNestedBlocks).length
+                    ? { variantNestedBlocks }
+                    : {}),
+                ...(variantsRouter ? { variantsRouter } : {}),
+            };
+        }
+        return registry;
     }
 }

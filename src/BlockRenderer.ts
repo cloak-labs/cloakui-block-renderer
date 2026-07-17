@@ -2,15 +2,39 @@ import type {
   BlockRendererConfig,
   BlockContext,
   BlockDataWithExtraContext,
+  ComponentLike,
   RenderPreparedBlock,
   EmptyObjectOrRecord,
   RenderOptions,
 } from "./types.js";
 import { deepMerge } from "@kaelan/deep-merge-ts";
 import { DeepPartial } from "ts-essentials";
+import { BlockManifest } from "./BlockManifest.js";
+import {
+  discoverBlocks,
+  type DiscoverBlocksOptions,
+  type DiscoverRegistryEntry,
+} from "./discoverBlocks.js";
+import {
+  applyNestedBlocks,
+  type NestedBlocksBinding,
+} from "./nestedBlocks.js";
+
+export type { BlockManifest, BlockManifestRecord } from "./BlockManifest.js";
+export {
+  discoverBlocks,
+  type DiscoverBlocksOptions,
+  type DiscoverRegistryEntry,
+} from "./discoverBlocks.js";
+export {
+  applyNestedBlocks,
+  treesFromNestedBlocks,
+  type NestedBlocksBinding,
+  type NestedTree,
+} from "./nestedBlocks.js";
 
 export class BlockRenderer<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TRenderOutput = any,
   TBlockData extends Record<string, any> = Record<string, any>
 > {
@@ -23,6 +47,7 @@ export class BlockRenderer<
   /** This property holds the full array of blocks data that is currently being rendered. */
   protected _blocksData: Partial<TBlockData>[] = [];
   protected _meta: Record<string, any> = {};
+  protected _manifest = new BlockManifest<TBlockData>();
 
   constructor(
     config: BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>
@@ -84,6 +109,17 @@ export class BlockRenderer<
         BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>
       >[]
     >(this._config, config);
+
+    // deepMerge keeps Set/Map by reference. Clone so plugin bookkeeping on a
+    // singleton base renderer (e.g. kit coreRenderer) isn't mutated when
+    // createPageBlockRenderer repeatedly mergeConfigWith()'s lazy block configs —
+    // otherwise processedBlocks skips container defaults on later requests.
+    if (mergedConfig.__processedBlocks instanceof Set) {
+      mergedConfig.__processedBlocks = new Set(mergedConfig.__processedBlocks);
+    }
+    if (mergedConfig.__executionCounts instanceof Map) {
+      mergedConfig.__executionCounts = new Map(mergedConfig.__executionCounts);
+    }
 
     return new BlockRenderer<TComponent, TRenderOutput, Partial<TBlockData>>(
       mergedConfig
@@ -147,6 +183,8 @@ export class BlockRenderer<
       return;
     }
 
+    const parentBlockConfig = config;
+
     // if the block has variants, we need to determine which one to use:
     if (config.variantsRouter) {
       const variant = config.variantsRouter?.(block);
@@ -164,6 +202,8 @@ export class BlockRenderer<
       return;
     }
 
+    this._manifest.recordRender(block, blockId);
+
     const { filters } = this._config.hooks;
 
     // call the block's dataRouter to receive its props
@@ -171,6 +211,19 @@ export class BlockRenderer<
       config.dataRouter?.(block, this) ?? {},
       { block, blockRenderer: this }
     );
+
+    const nestedBlocks =
+      ("nestedBlocks" in config ? config.nestedBlocks : undefined) ??
+      parentBlockConfig.nestedBlocks;
+
+    if (nestedBlocks?.length) {
+      dataRouterProps = applyNestedBlocks(
+        dataRouterProps,
+        block,
+        nestedBlocks,
+        this
+      );
+    }
 
     return {
       Component: config.component,
@@ -183,7 +236,10 @@ export class BlockRenderer<
     blocksData: Partial<TBlockData>[],
     options?: RenderOptions<TBlockData>
   ) {
-    if (!options?.parent) this._blocksData = blocksData;
+    if (!options?.parent) {
+      this._blocksData = blocksData;
+      this._manifest.resetRendered();
+    }
     const components = this.getComponents(blocksData, options);
 
     if (!this._config.renderBlock) {
@@ -224,7 +280,12 @@ export class BlockRenderer<
   ) {
     return Object.values(this._config.providers).reduceRight(
       (acc, provider) => {
-        if (provider.condition({ blocks: blocksData })) {
+        if (
+          provider.condition({
+            blocks: blocksData,
+            manifest: this._manifest,
+          })
+        ) {
           return provider.component({ children: acc });
         }
         return acc;
@@ -255,5 +316,79 @@ export class BlockRenderer<
   /** Attach some user-defined meta to this BlockRenderer instance. */
   setMeta(meta: Record<string, any>) {
     this._meta = deepMerge(this._meta, meta);
+  }
+
+  /**
+   * Walk block data and record discovered blocks without running data routers
+   * or rendering components. Useful for pre-render module selection.
+   */
+  discover(
+    blocksData: Partial<TBlockData>[] | undefined | null,
+    options?: Omit<
+      DiscoverBlocksOptions<TBlockData>,
+      "manifest" | "blockIdField"
+    >,
+  ): BlockManifest<TBlockData> {
+    const config = this.getConfig();
+    const registry = this.buildDiscoverRegistry(options?.registry);
+
+    return discoverBlocks(blocksData, {
+      ...options,
+      blockIdField: config.blockIdField,
+      registry,
+      manifest: this._manifest,
+    });
+  }
+
+  /** Blocks recorded during the most recent root-level `render()` call. */
+  getManifest(): BlockManifest<TBlockData> {
+    return this._manifest;
+  }
+
+  private buildDiscoverRegistry(
+    externalRegistry?: Record<string, DiscoverRegistryEntry<TBlockData>>,
+  ): Record<string, DiscoverRegistryEntry<TBlockData>> {
+    const registry: Record<string, DiscoverRegistryEntry<TBlockData>> = {
+      ...(externalRegistry ?? {}),
+    };
+    const blocks = this.getConfig().blocks;
+
+    if (!blocks || Array.isArray(blocks)) return registry;
+
+    for (const [blockId, blockConfig] of Object.entries(blocks)) {
+      const nestedBlocks = (blockConfig as {
+        nestedBlocks?: NestedBlocksBinding<TBlockData>[];
+      }).nestedBlocks;
+      const variantsRouter = (blockConfig as {
+        variantsRouter?: (
+          block: BlockDataWithExtraContext<Partial<TBlockData>>,
+        ) => string;
+      }).variantsRouter;
+      const variants = (blockConfig as {
+        variants?: Record<
+          string,
+          { nestedBlocks?: NestedBlocksBinding<TBlockData>[] }
+        >;
+      }).variants;
+
+      const variantNestedBlocks = variants
+        ? Object.fromEntries(
+            Object.entries(variants)
+              .filter(([, variant]) => variant.nestedBlocks?.length)
+              .map(([name, variant]) => [name, variant.nestedBlocks!]),
+          )
+        : undefined;
+
+      registry[blockId] = {
+        ...registry[blockId],
+        ...(nestedBlocks?.length ? { nestedBlocks } : {}),
+        ...(variantNestedBlocks && Object.keys(variantNestedBlocks).length
+          ? { variantNestedBlocks }
+          : {}),
+        ...(variantsRouter ? { variantsRouter } : {}),
+      };
+    }
+
+    return registry;
   }
 }

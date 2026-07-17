@@ -1,4 +1,20 @@
 import type { BlockRenderer } from "./BlockRenderer.js";
+import type { BlockManifest } from "./BlockManifest.js";
+import type { NestedBlocksBinding, NestedTree } from "./nestedBlocks.js";
+
+export type { NestedBlocksBinding, NestedTree } from "./nestedBlocks.js";
+
+/**
+ * The loosest shape of a renderable component: anything callable with a props
+ * object, or a class/constructor that accepts one (e.g. React class components,
+ * or the branded `ComponentType` unions returned by `next/dynamic`). Kept
+ * framework-agnostic on purpose — render-blocks never invokes components
+ * itself (except providers); the framework-specific `renderBlock` decides how
+ * to render them (e.g. JSX in React).
+ */
+export type ComponentLike =
+  | ((props: any) => any)
+  | (new (props: any) => any);
 
 // export type DataRouterResultFilter<TComponent, TRenderOutput, TBlockData> =
 //   FilterHookFunction<
@@ -11,7 +27,7 @@ import type { BlockRenderer } from "./BlockRenderer.js";
 //   >;
 
 export type BlockRendererConfig<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TRenderOutput = any,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
@@ -76,7 +92,7 @@ export type EmptyObjectOrRecord<T = Record<string, any>> = T extends Record<
   : EmptyObject;
 
 export type RenderPreparedBlock<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TProps = EmptyObjectOrRecord,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
@@ -88,7 +104,7 @@ export type RenderPreparedBlock<
 export type DataRouter<
   TProps = EmptyObjectOrRecord,
   TBlockData extends Record<string, any> = Record<string, any>,
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TBlockDataWithExtraContext = BlockDataWithExtraContext<TBlockData>,
 > = (
   block: TBlockDataWithExtraContext extends BlockDataWithExtraContext<any>
@@ -106,13 +122,14 @@ export type GlobalDataRouter<
 }) => TProps;
 
 export type SingleBlockConfigWithoutVariants<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TProps = EmptyObjectOrRecord,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   dataRouter?: DataRouter<TProps, TBlockData, TComponent>;
   component?: TComponent;
   meta?: Record<string, any>;
+  nestedBlocks?: NestedBlocksBinding<TBlockData>[];
 
   // Set the following to `never` as hacky way of ensuring they can't be used alongside above properties:
   variantsRouter?: never;
@@ -124,7 +141,7 @@ export type VariantsRouter<
 > = (block: BlockDataWithExtraContext<TBlockData>) => string;
 
 export type SingleBlockConfigWithVariants<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TProps = EmptyObjectOrRecord,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
@@ -137,6 +154,7 @@ export type SingleBlockConfigWithVariants<
     >;
   };
   meta?: Record<string, any>;
+  nestedBlocks?: NestedBlocksBinding<TBlockData>[];
 
   // Set the following to `never` as hacky way of ensuring they can't be used alongside variants:
   dataRouter?: never;
@@ -144,7 +162,7 @@ export type SingleBlockConfigWithVariants<
 };
 
 export type SingleBlockConfig<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TBlockData extends Record<string, any> = Record<string, any>,
 > =
   | SingleBlockConfigWithoutVariants<
@@ -155,7 +173,7 @@ export type SingleBlockConfig<
   | SingleBlockConfigWithVariants<TComponent, EmptyObjectOrRecord, TBlockData>;
 
 export type BlocksConfig<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
   [key: string]: SingleBlockConfig<TComponent, TBlockData>;
@@ -186,15 +204,23 @@ export type RenderOptions<
 };
 
 export type ProviderConfig<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = {
-  condition: (args: { blocks: TBlockData[] }) => boolean;
-  component: TComponent;
+  condition: (args: {
+    blocks: TBlockData[];
+    manifest: BlockManifest<TBlockData>;
+  }) => boolean;
+  /**
+   * Unlike block `component`s (rendered by the framework-specific
+   * `renderBlock`), providers are invoked directly by `BlockRenderer`, so they
+   * must be plain callables (class components are not supported here).
+   */
+  component: Extract<TComponent, (props: any) => any>;
 };
 
 export type BlockRendererPlugin<
-  TComponent extends (props: any) => any = (props: any) => any,
+  TComponent extends ComponentLike = ComponentLike,
   TRenderOutput = any,
   TBlockData extends Record<string, any> = Record<string, any>,
 > = (
