@@ -1,7 +1,7 @@
 {
-  "name": "@kaelan/render-blocks",
-  "version": "0.3.0",
-  "description": "A framework-agnostic rendering engine for dynamic lists of blocks.",
+  "name": "@cloakui/block-renderer",
+  "version": "0.4.0",
+  "description": "A framework-agnostic rendering engine for JSON trees representing UI blocks.",
   "type": "module",
   "main": "dist/index",
   "types": "dist/index.d.ts",
@@ -21,14 +21,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cloak-labs/render-blocks.git"
+    "url": "git+https://github.com/cloak-labs/cloakui-block-renderer.git"
   },
   "author": "Kaelan Smith",
   "license": "LGPL-3.0-only",
   "bugs": {
-    "url": "https://github.com/cloak-labs/render-blocks/issues"
+    "url": "https://github.com/cloak-labs/cloakui-block-renderer/issues"
   },
-  "homepage": "https://github.com/cloak-labs/render-blocks#readme",
+  "homepage": "https://github.com/cloak-labs/cloakui-block-renderer#readme",
   "dependencies": {
     "@kaelan/deep-merge-ts": "^0.0.1"
   },

@@ -13,8 +13,16 @@ export function applyNestedBlocks(props, block, bindings, renderer) {
         if (!trees.length)
             continue;
         const opts = binding.renderOptions?.(block, nextProps) ?? {};
+        const baseOptions = {
+            parent: block,
+            ...opts,
+        };
+        const filter = renderer.getConfig().hooks?.filters?.nestedRenderOptions;
+        const renderOptions = filter
+            ? filter(baseOptions, { parent: block, props: nextProps })
+            : baseOptions;
         const rendered = trees.map(({ blocks, meta }) => ({
-            output: renderer.render(blocks, { parent: block, ...opts }),
+            output: renderer.render(blocks, renderOptions),
             meta,
         }));
         const attached = binding.attach(nextProps, rendered);

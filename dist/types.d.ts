@@ -21,6 +21,14 @@ export type BlockRendererConfig<TComponent extends ComponentLike = ComponentLike
                 block: BlockDataWithExtraContext<TBlockData>;
                 blockRenderer: BlockRenderer<TComponent, TRenderOutput, TBlockData>;
             }, Record<string, any>>;
+            /**
+             * Filter `RenderOptions` right before nested `renderer.render(...)` calls.
+             * Use to push opaque ancestor context (e.g. layout slots) down the tree.
+             */
+            nestedRenderOptions?: FilterHookFunction<RenderOptions<TBlockData>, {
+                parent: BlockDataWithExtraContext<Partial<TBlockData>>;
+                props: Record<string, any>;
+            }, RenderOptions<TBlockData>>;
         };
     };
     blocks?: BlocksConfig<TComponent, TBlockData> | BlocksConfig<TComponent, TBlockData>[];
@@ -71,15 +79,33 @@ export type BlockDataWithExtraContext<TBlockData extends Record<string, any> = R
     meta?: Record<string, any>;
 };
 export type BlockContext<TBlockData extends Record<string, any> = Record<string, any>> = {
-    customProps?: Record<string, any>;
+    /**
+     * Per-hop extras from the immediate parent (or root `render()` call),
+     * e.g. column spans. Usually replaced at each nesting boundary.
+     */
+    fromParent?: Record<string, any>;
     parent?: BlockDataWithExtraContext<Partial<TBlockData>> | null;
     index?: number;
     prevSibling?: TBlockData | null;
     nextSibling?: TBlockData | null;
+    /**
+     * Opaque bag composed down the ancestor chain via `RenderOptions.fromAncestors`
+     * (e.g. layout slots). Packages own the keys they read/write.
+     */
+    fromAncestors?: Record<string, unknown>;
 };
 export type RenderOptions<TBlockData extends Record<string, any> = Record<string, any>> = {
     parent?: BlockDataWithExtraContext<Partial<TBlockData>>;
-    customProps?: Record<string, any>;
+    /**
+     * Per-hop extras for children of this `render()` call. Copied onto each
+     * child's `context.fromParent`.
+     */
+    fromParent?: Record<string, any>;
+    /**
+     * Opaque bag copied onto each child's `context.fromAncestors` during nested
+     * renders. Typically composed by `hooks.filters.nestedRenderOptions`.
+     */
+    fromAncestors?: Record<string, unknown>;
 };
 export type ProviderConfig<TComponent extends ComponentLike = ComponentLike, TBlockData extends Record<string, any> = Record<string, any>> = {
     condition: (args: {

@@ -76,6 +76,7 @@ export class BlockRenderer<
       hooks: {
         filters: {
           dataRouterResult: (value) => value,
+          nestedRenderOptions: (value) => value,
           ...config.hooks?.filters,
         },
       },
@@ -136,7 +137,7 @@ export class BlockRenderer<
     Partial<TBlockData>
   >[] {
     if (!blocksData || !blocksData.length) return [];
-    const { parent, customProps } = options ?? {};
+    const { parent, fromParent, fromAncestors } = options ?? {};
 
     let blocks = [];
     const config = this.getConfig();
@@ -148,11 +149,12 @@ export class BlockRenderer<
       if (!blockConfig) return;
 
       const context: BlockContext<Partial<TBlockData>> = {
-        customProps,
+        fromParent,
         parent,
         index: i,
         prevSibling: i > 0 ? blocksData[i - 1] : null,
         nextSibling: i < blocksData.length - 1 ? blocksData[i + 1] : null,
+        fromAncestors,
       };
 
       // for each block, get its component from blocksConfig, and dataRouter to get props

@@ -1,4 +1,8 @@
-import type { BlockDataWithExtraContext, ComponentLike } from "./types.js";
+import type {
+  BlockDataWithExtraContext,
+  ComponentLike,
+  RenderOptions,
+} from "./types.js";
 import type { BlockRenderer } from "./BlockRenderer.js";
 
 export type NestedTree<
@@ -17,12 +21,12 @@ export type NestedBlocksBinding<
 
   /**
    * Options passed into renderer.render() for these trees.
-   * `parent` is always the current block; this adds customProps etc.
+   * `parent` is always the current block; this adds fromParent etc.
    */
   renderOptions?: (
     block: Partial<TBlockData>,
     props: Record<string, any>,
-  ) => { customProps?: Record<string, any> };
+  ) => Omit<RenderOptions<TBlockData>, "parent">;
 
   /** Merge rendered outputs into data-router props. */
   attach: (
@@ -67,8 +71,17 @@ export function applyNestedBlocks<
     if (!trees.length) continue;
 
     const opts = binding.renderOptions?.(block, nextProps) ?? {};
+    const baseOptions: RenderOptions<TBlockData> = {
+      parent: block,
+      ...opts,
+    };
+    const filter = renderer.getConfig().hooks?.filters?.nestedRenderOptions;
+    const renderOptions = filter
+      ? filter(baseOptions, { parent: block, props: nextProps })
+      : baseOptions;
+
     const rendered = trees.map(({ blocks, meta }) => ({
-      output: renderer.render(blocks, { parent: block, ...opts }),
+      output: renderer.render(blocks, renderOptions),
       meta,
     }));
 
