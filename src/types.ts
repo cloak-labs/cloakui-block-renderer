@@ -12,9 +12,7 @@ export type { NestedBlocksBinding, NestedTree } from "./nestedBlocks.js";
  * itself (except providers); the framework-specific `renderBlock` decides how
  * to render them (e.g. JSX in React).
  */
-export type ComponentLike =
-  | ((props: any) => any)
-  | (new (props: any) => any);
+export type ComponentLike = ((props: any) => any) | (new (props: any) => any);
 
 // export type DataRouterResultFilter<TComponent, TRenderOutput, TBlockData> =
 //   FilterHookFunction<
@@ -96,12 +94,8 @@ export type FilterHookFunction<TValue = any, TProps = any, TResult = any> = (
 ) => TResult;
 
 export type EmptyObject = {};
-export type EmptyObjectOrRecord<T = Record<string, any>> = T extends Record<
-  string,
-  any
->
-  ? T
-  : EmptyObject;
+export type EmptyObjectOrRecord<T = Record<string, any>> =
+  T extends Record<string, any> ? T : EmptyObject;
 
 export type RenderPreparedBlock<
   TComponent extends ComponentLike = ComponentLike,

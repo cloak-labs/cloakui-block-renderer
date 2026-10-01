@@ -15,10 +15,7 @@ import {
   type DiscoverBlocksOptions,
   type DiscoverRegistryEntry,
 } from "./discoverBlocks.js";
-import {
-  applyNestedBlocks,
-  type NestedBlocksBinding,
-} from "./nestedBlocks.js";
+import { applyNestedBlocks, type NestedBlocksBinding } from "./nestedBlocks.js";
 
 export type { BlockManifest, BlockManifestRecord } from "./BlockManifest.js";
 export {
@@ -36,7 +33,7 @@ export {
 export class BlockRenderer<
   TComponent extends ComponentLike = ComponentLike,
   TRenderOutput = any,
-  TBlockData extends Record<string, any> = Record<string, any>
+  TBlockData extends Record<string, any> = Record<string, any>,
 > {
   protected _config: BlockRendererConfig<
     TComponent,
@@ -50,7 +47,7 @@ export class BlockRenderer<
   protected _manifest = new BlockManifest<TBlockData>();
 
   constructor(
-    config: BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>
+    config: BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>,
   ) {
     let {
       blocks,
@@ -102,7 +99,7 @@ export class BlockRenderer<
   mergeConfigWith(
     config: DeepPartial<
       BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>
-    >
+    >,
   ) {
     const mergedConfig = deepMerge<
       BlockRendererConfig<TComponent, TRenderOutput, Partial<TBlockData>>,
@@ -123,14 +120,14 @@ export class BlockRenderer<
     }
 
     return new BlockRenderer<TComponent, TRenderOutput, Partial<TBlockData>>(
-      mergedConfig
+      mergedConfig,
     );
   }
 
   /** This method gets the raw block data array prepared/formatted for rendering. */
   getComponents(
     blocksData: Partial<TBlockData>[],
-    options?: RenderOptions<TBlockData>
+    options?: RenderOptions<TBlockData>,
   ): RenderPreparedBlock<
     TComponent,
     EmptyObjectOrRecord,
@@ -174,7 +171,7 @@ export class BlockRenderer<
 
   /** Given a formatted block data object, this method determines the correct component, runs the block's data router to get the props for that components, and returns both in the format that the `render` function expects.  */
   getComponent<TProps = EmptyObjectOrRecord>(
-    block: BlockDataWithExtraContext<Partial<TBlockData>>
+    block: BlockDataWithExtraContext<Partial<TBlockData>>,
   ): RenderPreparedBlock<TComponent, TProps, Partial<TBlockData>> {
     const blockId = block[this._config.blockIdField];
 
@@ -193,7 +190,7 @@ export class BlockRenderer<
       config = config.variants[variant];
       if (!config) {
         console.error(
-          `Missing variant config for "${variant}" in the block "${blockId}", so we skip it.`
+          `Missing variant config for "${variant}" in the block "${blockId}", so we skip it.`,
         );
         return;
       }
@@ -211,7 +208,7 @@ export class BlockRenderer<
     // call the block's dataRouter to receive its props
     let dataRouterProps = filters.dataRouterResult(
       config.dataRouter?.(block, this) ?? {},
-      { block, blockRenderer: this }
+      { block, blockRenderer: this },
     );
 
     const nestedBlocks =
@@ -223,7 +220,7 @@ export class BlockRenderer<
         dataRouterProps,
         block,
         nestedBlocks,
-        this
+        this,
       );
     }
 
@@ -236,7 +233,7 @@ export class BlockRenderer<
 
   render(
     blocksData: Partial<TBlockData>[],
-    options?: RenderOptions<TBlockData>
+    options?: RenderOptions<TBlockData>,
   ) {
     if (!options?.parent) {
       this._blocksData = blocksData;
@@ -246,18 +243,18 @@ export class BlockRenderer<
 
     if (!this._config.renderBlock) {
       throw Error(
-        `You need to specify a "renderBlock" function in your BlockRenderer config before you can use BlockRenderer.render(...)`
+        `You need to specify a "renderBlock" function in your BlockRenderer config before you can use BlockRenderer.render(...)`,
       );
     }
     if (!this._config.combineBlocks) {
       throw Error(
-        `You need to specify a "combineBlocks" function in your BlockRenderer config before you can use BlockRenderer.render(...)`
+        `You need to specify a "combineBlocks" function in your BlockRenderer config before you can use BlockRenderer.render(...)`,
       );
     }
 
     // Render individual blocks
     const renderedBlocks = components.map((component) =>
-      this._config.renderBlock(component, options, this)
+      this._config.renderBlock(component, options, this),
     );
 
     // Combine blocks (allowing for grouping/wrapping)
@@ -265,7 +262,7 @@ export class BlockRenderer<
       renderedBlocks,
       components,
       options,
-      this
+      this,
     );
 
     // Apply providers if they exist, their conditions are met, and we're rendering blocks at the root level (not nested/inner blocks)
@@ -278,7 +275,7 @@ export class BlockRenderer<
 
   private applyProviders(
     content: TRenderOutput | TRenderOutput[],
-    blocksData: Partial<TBlockData>[]
+    blocksData: Partial<TBlockData>[],
   ) {
     return Object.values(this._config.providers).reduceRight(
       (acc, provider) => {
@@ -292,7 +289,7 @@ export class BlockRenderer<
         }
         return acc;
       },
-      content
+      content,
     );
   }
 
@@ -358,20 +355,26 @@ export class BlockRenderer<
     if (!blocks || Array.isArray(blocks)) return registry;
 
     for (const [blockId, blockConfig] of Object.entries(blocks)) {
-      const nestedBlocks = (blockConfig as {
-        nestedBlocks?: NestedBlocksBinding<TBlockData>[];
-      }).nestedBlocks;
-      const variantsRouter = (blockConfig as {
-        variantsRouter?: (
-          block: BlockDataWithExtraContext<Partial<TBlockData>>,
-        ) => string;
-      }).variantsRouter;
-      const variants = (blockConfig as {
-        variants?: Record<
-          string,
-          { nestedBlocks?: NestedBlocksBinding<TBlockData>[] }
-        >;
-      }).variants;
+      const nestedBlocks = (
+        blockConfig as {
+          nestedBlocks?: NestedBlocksBinding<TBlockData>[];
+        }
+      ).nestedBlocks;
+      const variantsRouter = (
+        blockConfig as {
+          variantsRouter?: (
+            block: BlockDataWithExtraContext<Partial<TBlockData>>,
+          ) => string;
+        }
+      ).variantsRouter;
+      const variants = (
+        blockConfig as {
+          variants?: Record<
+            string,
+            { nestedBlocks?: NestedBlocksBinding<TBlockData>[] }
+          >;
+        }
+      ).variants;
 
       const variantNestedBlocks = variants
         ? Object.fromEntries(

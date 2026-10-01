@@ -19,8 +19,8 @@ npm i @cloakui/block-renderer
 
 ```ts
 import { BlockRenderer } from "@cloakui/block-renderer";
-import { Paragraph } from "@components/Paragraph"; 
-import { Group } from "@components/Group"; 
+import { Paragraph } from "@components/Paragraph";
+import { Group } from "@components/Group";
 
 type MyBlock = { name: string; data?: Record<string, unknown>; innerBlocks?: MyBlock[] };
 
@@ -46,7 +46,7 @@ const renderer = new BlockRenderer<React.ComponentType<any>, React.ReactNode, My
           // tell the renderer how to find nested blocks:
           trees: (block) =>
             block.innerBlocks?.length ? [{ blocks: block.innerBlocks }] : [],
-          // tell the renderer how to inject the rendered output of nested blocks into the parent component's props: 
+          // tell the renderer how to inject the rendered output of nested blocks into the parent component's props:
           attach: (props, rendered) => {
             props.children = rendered[0]?.output;
           },
@@ -68,13 +68,13 @@ const tree = renderer.render(page.blocks); // eg. page is JSON fetched from a CM
 
 Each entry is keyed by the block ID field (default-friendly: `name`):
 
-| Field | Purpose |
-| --- | --- |
-| `component` | UI component for this block |
-| `dataRouter` | A function that receives the block's data and context within the tree, and returns props to be spread onto the component |
-| `meta` | Arbitrary metadata (plugins often read this) |
-| `nestedBlocks` | How to find, render, and attach child trees |
-| `variantsRouter` + `variants` | Allows different versions of a single block to define unique data routers & components. |
+| Field                         | Purpose                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `component`                   | UI component for this block                                                                                              |
+| `dataRouter`                  | A function that receives the block's data and context within the tree, and returns props to be spread onto the component |
+| `meta`                        | Arbitrary metadata (plugins often read this)                                                                             |
+| `nestedBlocks`                | How to find, render, and attach child trees                                                                              |
+| `variantsRouter` + `variants` | Allows different versions of a single block to define unique data routers & components.                                  |
 
 Configs can be a single object or an **array of objects** that are deep-merged in the constructor.
 
@@ -82,7 +82,7 @@ Configs can be a single object or an **array of objects** that are deep-merged i
 blocks: [
   coreBlocks, // an array of block configs
   projectOverrides, // 2nd array of block configs, which can override specific parts of individual block configs in coreBlocks
-]
+];
 ```
 
 ### Variants
@@ -145,13 +145,13 @@ const innerBlocksChildren = {
 
 Each prepared block gets `context`:
 
-| Key | Meaning |
-| --- | --- |
-| `parent` | Parent block object (when nested) |
-| `index` | Index among siblings |
-| `prevSibling` / `nextSibling` | Adjacent block objects in the same array |
-| `fromParent` | Per-hop extras from the immediate parent / this `render()` call. Usually replaced at each nesting boundary. |
-| `fromAncestors` | Opaque bag composed down the ancestor chain (e.g. layout slots). Usually set by plugins via `nestedRenderOptions`. |
+| Key                           | Meaning                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `parent`                      | Parent block object (when nested)                                                                                  |
+| `index`                       | Index among siblings                                                                                               |
+| `prevSibling` / `nextSibling` | Adjacent block objects in the same array                                                                           |
+| `fromParent`                  | Per-hop extras from the immediate parent / this `render()` call. Usually replaced at each nesting boundary.        |
+| `fromAncestors`               | Opaque bag composed down the ancestor chain (e.g. layout slots). Usually set by plugins via `nestedRenderOptions`. |
 
 `fromAncestors` is intentionally untyped at this layer — owning packages define their own keys.
 
@@ -164,7 +164,8 @@ Typical uses: default `meta`, wrapping `renderBlock` / `combineBlocks`, register
 ```ts
 const myPlugin = (config, { executionCount }) => {
   if (executionCount > 1) return config;
-  return { // returns regular BlockRenderer config, with modifications
+  return {
+    // returns regular BlockRenderer config, with modifications
     ...config,
     hooks: {
       filters: {
@@ -218,13 +219,13 @@ const pageRenderer = baseRenderer.mergeConfigWith({
 
 ## API surface
 
-| Export | Role |
-| --- | --- |
-| `BlockRenderer` | Main class: `render`, `discover`, `mergeConfigWith`, … |
-| `BlockManifest` | Discovered / rendered block records |
-| `discoverBlocks` | Standalone discovery walk |
-| `applyNestedBlocks` / `treesFromNestedBlocks` | Nesting helpers |
-| Types | `BlocksConfig`, `DataRouter`, `NestedBlocksBinding`, `RenderOptions`, … |
+| Export                                        | Role                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| `BlockRenderer`                               | Main class: `render`, `discover`, `mergeConfigWith`, …                  |
+| `BlockManifest`                               | Discovered / rendered block records                                     |
+| `discoverBlocks`                              | Standalone discovery walk                                               |
+| `applyNestedBlocks` / `treesFromNestedBlocks` | Nesting helpers                                                         |
+| Types                                         | `BlocksConfig`, `DataRouter`, `NestedBlocksBinding`, `RenderOptions`, … |
 
 ---
 
