@@ -1,7 +1,7 @@
 import { deepMerge } from "@kaelan/deep-merge-ts";
 import { BlockManifest } from "./BlockManifest.js";
 import { discoverBlocks, } from "./discoverBlocks.js";
-import { applyNestedBlocks, } from "./nestedBlocks.js";
+import { applyNestedBlocks } from "./nestedBlocks.js";
 export { discoverBlocks, } from "./discoverBlocks.js";
 export { applyNestedBlocks, treesFromNestedBlocks, } from "./nestedBlocks.js";
 export class BlockRenderer {
